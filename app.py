@@ -2,8 +2,12 @@ import streamlit as st
 from PIL import Image
 import cv2
 import numpy as np
-from detect import ObjectDetector
 import av
+import os
+
+
+# Set environment variable for Ultralytics
+os. environ['YOLO_CONFIG_DIR'] = '/tmp/Ultralytics'
 
 # Page config
 st.set_page_config(
@@ -12,12 +16,18 @@ st.set_page_config(
     layout="wide"
 )
 
+from detect import ObjectDetector
+
 # Initialize detector
 @st.cache_resource
 def load_detector():
     return ObjectDetector()
 
-detector = load_detector()
+try:
+    detector = load_detector()
+except Exception as e:
+    st.error(f"Error loading detector: {str(e)}")
+    st.stop()
 
 # Title
 st.title("📹SafetyVision - Object Detection System")
@@ -32,6 +42,7 @@ conf_threshold = st.sidebar.slider(
     value=0.5,
     step=0.05
 )
+
 
 st.sidebar.subheader("Alerts")
 alert_objects = st.sidebar.multiselect(

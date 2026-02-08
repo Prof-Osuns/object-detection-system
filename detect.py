@@ -2,11 +2,15 @@ from ultralytics import YOLO
 import cv2
 import numpy as np
 from PIL import Image
+import os
 
 class ObjectDetector:
     def __init__(self):
         # Load pre-trained YOLOv8 model
-        self.model = YOLO('yolov8n.pt') # 'n' = nano (fastest)
+        try:
+            self.model = YOLO('yolov8n.pt') # 'n' = nano (fastest)
+        except Exception as e:
+            raise Exception(f"Failed to load YOLO model: {str(e)}")
 
     def detect_objects(self, image, conf_threshold=0.5):
         """
@@ -19,29 +23,37 @@ class ObjectDetector:
         Returns:
                annotated_image, detections_list
         """
-        # Convert PIL to numpy if needed
-        if isinstance(image, Image.Image):
-            image = np.array(image)
+        try:
+            # Convert PIL to numpy if needed
+            if isinstance(image, Image.Image):
+                image = np.array(image)
+                
+            # Run detection
+            results = self.model(image, conf=conf_threshold)
+            
+            # Get annotated image
+            annotated = results[0].plot()
 
-        # Run detection
-        results = self.model(image, conf=conf_threshold)
+            # Extract detection info
+            detections = []
+            for result in results:
+                boxes = result.boxes
+                for box in boxes:
+                    detection = {
+                        'class': result.names[int(box.cls)],
+                        'confidence': float(box.conf),
+                        'bbox': box.xyxy[0].tolist()
+                    }
+                    detections.append(detection)
+                    
+                return annotated, detections
+        except Exception as e:
+            raise Exception(f"Detection failed: {str(e)}")
+    
 
-        # Get annotated image
-        annotated = results[0].plot()
 
-        # Extract detection info
-        detections = []
-        for result in results:
-            boxes = result.boxes
-            for box in boxes:
-                detection = {
-                    'class': result.names[int(box.cls)],
-                    'confidence': float(box.conf),
-                    'bbox': box.xyxy[0].tolist()
-                }
-                detections.append(detection)
-
-        return annotated, detections
+            
+    
     
     def count_objects(self, detections):
         """Count objects by class"""
