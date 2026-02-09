@@ -2,8 +2,9 @@ import streamlit as st
 from PIL import Image
 import cv2
 import numpy as np
-import av
+import json
 import os
+from io import BytesIO
 
 
 # Set environment variable for Ultralytics
@@ -78,80 +79,79 @@ if detection_mode == "Image Upload":
         # Detect button
         if st.button("Detect Objects", type="primary"):
             with st.spinner("Analyzing image..."):
-                # Run detection
-                annotated, detections = detector.detect_objects(
-                    image,
-                    conf_threshold=conf_threshold
-                )
-
-                # Show results
-                with col2:
-                    st.subheader("Detection Results")
-                    st.image(annotated, use_container_width=True)
-
-                import json
-                # Download annotated image
-                from io import BytesIO
-                
-                buf = BytesIO()
-                Image.fromarray(annotated).save(buf, format="PNG")
-                st.download_button(
-                    "Download Result",
-                    buf.getvalue(),
-                    "detection_result.png",
-                    "image/png"
-                )
-                # Download detection data
-                st.download_button(
-                    "Download Data (JSON)",
-                    json.dumps(detections, indent=2),
-                    "detections.json",
-                    "application/json"
+                try:
+                    # Run detection
+                    annotated, detections = detector.detect_objects(
+                        image,
+                        conf_threshold=conf_threshold
                     )
 
+                    # Show results
+                    with col2:
+                        st.subheader("Detection Results")
+                        st.image(annotated, use_container_width=True)
 
-                # Object counts
-                st.markdown("---")
-                st.subheader("Detection Summary")
+                    # Download buttons
+                    col_d1, col_d2 = st.columns(2)
 
-                if detections:
-                    counts = detector.count_objects(detections)
-
-                    # Display counts
-                    cols = st.columns(len(counts))
-                    for i, (obj, count) in enumerate(counts.items()):
-                        with cols[i]:
-                            st.metric(obj.title(), count)
-
-                    import pandas as pd
-                    import plotly.express as px
-
-                    st.subheader("Detection Analytics")
-
-                    df = pd.DataFrame(detections)
-
-                    fig = px.histogram(
-                        df,
-                        x='class',
-                        title="Object Distribution"
-                    )
-
-                    st.plotly_chart(fig, use_container_width=True)
-
-                    # Detailed list
-                    st.subheader("Detailed Detections")
-                    for i, det in enumerate(detections, 1):
-                        st.write(
-                            f"{i}. **{det['class'].title()}** -"
-                            f"Confidence: {det['confidence']:.1%}"
+                    with col_d1:
+                        buf = BytesIO()
+                        Image.fromarray(annotated).save(buf, format="PNG")
+                        st.download_button(
+                            "Download Result",
+                            buf.getvalue(),
+                            "detection_result.png",
+                            "image/png"
                         )
-                else:
-                    st.info("No objects detected. Try lowering the confidence threshold.")
 
-                if detections and alert_objects:
-                    detected_alert_objects = [d['class'] for d in detections if d['class'] in alert_objects]
-                    if detected_alert_objects:
-                        st.warning(f"ALERT: Detect {', '.join(set(detected_alert_objects))}")
+                    with col_d2:
+                        # Download detection data
+                        st.download_button(
+                            "Download Data (JSON)",
+                            json.dumps(detections, indent=2),
+                            "detections.json",
+                            "application/json"
+                        )
+
+
+                    # Object counts
+                    st.markdown("---")
+                    st.subheader("Detection Summary")
+
+                    if detections:
+                        counts = detector.count_objects(detections)
+
+                        # Display counts
+                        count_items = list(counts.items())
+                        num_cols = min(len(count_items), 4)
+                        cols = st.columns(num_cols)
+
+                        for i, (obj, count) in enumerate(count_items):
+                            with cols[i % num_cols]:
+                                st.metric(obj.title(), count)
+
+                        # Detailed list
+                        st.markdown("---")
+                        st.subheader("Detailed Detections")
+                        for i, det in enumerate(detections, 1):
+                            st.write(
+                                f"{i}. **{det['class'].title()}** -"
+                                f"Confidence: {det['confidence']:.1%}"
+                            )
+
+                        # Alert system
+                        if alert_objects:
+                            detected_alert_objects = [d['class'] for d in detections if d['class'] in  alert_objects]
+                            if detected_alert_objects:
+                                st.warning(f"ALERT: Detected {','.join(set(detected_alert_objects))}")
+
+
+                    else:
+                        st.info("No objects detected. Try lowering the confidence threshold.")
+
+                except Exception as e:
+                    st.error(f"Error during detection: {str(e)}")
+                    
 
 elif detection_mode == "Video Upload":
     st.subheader("Video Detection")
@@ -170,45 +170,35 @@ elif detection_mode == "Video Upload":
 
         if st.button("Process Video", type="primary"):
             with st.spinner("Processing video... This may take a few minutes"):
-                output_path, detections = detector.detect_video(
-                    "temp_video.mp4",
-                    conf_threshold=conf_threshold
-                )
-                st.success(f"Processed! Found {len(detections)} objects")
+                try:
+                    output_path, detections = detector.detect_video(
+                        "temp_video.mp4",
+                        conf_threshold=conf_threshold
+                    )
+                    st.success(f"Processed! Found {len(detections)} objects")
 
-                # Show processed video
-                st.subheader("Results")
-                st.video(output_path)
+                    # Show processed video
+                    st.subheader("Results")
+                    st.video(output_path)
 
-                # Stats
-                counts = detector.count_objects(detections)
-                st.subheader("Detection Summary")
-                for obj, count in counts.items():
-                    st.metric(obj.title(), count)
+                    # Stats
+                    if detections:
+                        counts = detector.count_objects(detections)
+                        st.subheader("Detection Summary")
+
+                        count_items = list(counts.items())
+                        num_cols = min(len(count_items), 4)
+                        cols = st.columns(num_cols)
+
+                        for i, (obj, count) in enumerate(count_items):
+                            with cols[i % num_cols]:
+                                st.metric(obj.title(), count)
+
+                except Exception as e:
+                    st.error(f"Error processing video: {str(e)}")
 
 
-else: # Webcam
-    st.subheader("Live Webcam Detection")
 
-    run_webcam = st.checkbox("Start Webcam")
-
-    if run_webcam:
-        from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
-
-        class VideoProcessor(VideoProcessorBase):
-            def __init__(self):
-                self.detector = ObjectDetector()
-
-            def recv(self, frame):
-                img = frame.to_ndarray(format="bgr24")
-
-                # Detect
-                results = self.detector.model(img, conf=conf_threshold)
-                annotated = results[0].plot()
-
-                return av.VideoFrame.from_ndarray(annotated, format="bgr24")
-            
-        webrtc_streamer(key="detection", video_processor_factory=VideoProcessor)
 
 
 
