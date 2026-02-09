@@ -3,7 +3,7 @@
 Real-time object detection system powered by YOLOv8 for security monitoring and analytics.
 
 ## Live Demo
-[Try it here](link)
+[Try it here](https//:object-detection-system-ayomikun.streamlit.app)
 
 ## Business Applications
 
@@ -63,12 +63,15 @@ streamlit run app.py
 
 ## Future Enhancements
 
-- Custom model training for specific use cases
-- Multi-camera support
-- Cloud storage integration
-- Mobile app version
-- Real-time alerting via SMS/email
+- **Model Upgrade**: Switch to YOLOv8 Large for higher accuracy
+- **Custom Training**: Fine-tune on domain-specific datasets
+- **Object Tracking**: Add tracking IDs for video analysis
+- **Multi-camera Support**: Process multiple feeds simultaneously
+- **Real-time Webcam**: Optimize for web deployment
+- **Cloud Storage**: Integrate with AWS S3/Google Drive
+- **Mobile app version**
+- **Email Alerts**: Automated notifications for detected  objects
 
 ## Author
 Ayomikun Osunseyi - ML Engineer
-[Github](link) | [LinkedIn](link)
+[Github](https://github.com/Prof-Osuns) | [LinkedIn](https://www.linkedin.com/in/ayomikun-osunseyi-bba3a71b3/)
