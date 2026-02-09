@@ -197,10 +197,16 @@ elif detection_mode == "Video Upload":
                 except Exception as e:
                     st.error(f"Error processing video: {str(e)}")
 
+else: # Webcam (Live)
+    st.subheader("📹Live Webcam Detection")
+    st.info("Webcam feature coming soon for web deployment!")
 
-
-
-
+    st.markdown("""
+        **Available when running locally:**
+        - Clone the [Github repo](https://github.com/Prof-Osuns/object-detection-system)
+        - Run `streamlit run app.py`
+        - Enoy real-time object detection!
+    """)
 
 # Footer
 st.markdown("---")
